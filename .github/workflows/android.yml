@@ -1,52 +1,47 @@
-name: Build WireGuard APK
+name: Build WireGuard Android APK
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ master ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Set up Android NDK
-      uses: android-actions/setup-android@v3
-      with:
-        ndk-version: '26.3.11579264'   # 对应 r26d
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-35 build-tools;35.0.0 ndk;28.0.13004108 cmake;3.22.1
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
-        cache-dependency-path: app/src/main/go/go.sum   # 关键修改
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
 
-    - name: Set Go proxy (for China network)
-      run: go env -w GOPROXY=https://goproxy.cn,direct
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
 
-    - name: Download Go dependencies
-      run: cd app/src/main/go && go mod download
+      - name: Build APK
+        run: ./gradlew assembleRelease
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
-    - name: Build Release APK
-      run: ./gradlew assembleRelease --stacktrace
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: wireguard-android-release
-        path: app/build/outputs/apk/release/*.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: wireguard-android
+          path: ui/build/outputs/apk/release/*.apk
