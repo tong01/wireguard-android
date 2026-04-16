@@ -15,37 +15,35 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: set up JDK 17
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
 
-    - name: Setup Android NDK
-      uses: nttld/setup-ndk@v1
-      id: setup-ndk
+    - name: Set up Android NDK
+      uses: android-actions/setup-android@v3
       with:
-        ndk-version: r26d
-        add-to-path: true
+        ndk-version: '26.3.11579264'   # 对应 r26d
 
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
+        cache-dependency-path: app/src/main/go/go.sum   # 关键修改
 
-    - name: Set Go proxy
+    - name: Set Go proxy (for China network)
       run: go env -w GOPROXY=https://goproxy.cn,direct
 
-    - name: Generate local.properties
-      run: |
-        echo "ndk.dir=${{ steps.setup-ndk.outputs.ndk-path }}" > local.properties
+    - name: Download Go dependencies
+      run: cd app/src/main/go && go mod download
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
     - name: Build Release APK
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleRelease --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
